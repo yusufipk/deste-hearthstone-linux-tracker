@@ -157,8 +157,15 @@ class TrackerWindow(QWidget):
             lambda: self._popup(self.deck_button, self.deck_menu, align_right=False)
         )
         deck_row.addWidget(self.deck_button, 1)
+        # Elimdeki kart sayısı destede kalanın solunda: rakip satırındaki
+        # "el N deste N" ile aynı sıra, aynı okuma yönü.
+        self.my_hand_label = QLabel("")
+        self.my_hand_label.setObjectName("dim")
+        self.my_hand_label.setToolTip(t("hand_tooltip"))
+        deck_row.addWidget(self.my_hand_label)
         self.deck_count_label = QLabel("")
         self.deck_count_label.setObjectName("count")
+        self.deck_count_label.setToolTip(t("deck_count_tooltip"))
         deck_row.addWidget(self.deck_count_label)
         top_layout.addLayout(deck_row)
         self._rebuild_deck_menu()
@@ -294,6 +301,8 @@ class TrackerWindow(QWidget):
         self.menu = self._build_menu()
         self._fill_tray_menu()
         self.deck_button.setToolTip(t("deck_tooltip"))
+        self.my_hand_label.setToolTip(t("hand_tooltip"))
+        self.deck_count_label.setToolTip(t("deck_count_tooltip"))
         self.my_list.set_empty_text(t("deck_empty"))
         self.opponent_list.set_empty_text(t("opponent_empty"))
         self.opponent_title.setText(t("opponent_title"))
@@ -546,6 +555,7 @@ class TrackerWindow(QWidget):
             self.opponent_dot.set_class("NEUTRAL")
             self.my_list.set_cards([])
             self.opponent_list.set_cards([])
+            self.my_hand_label.setText("")
             self.deck_count_label.setText("")
             self.opponent_counts.setText("")
             return
@@ -559,6 +569,8 @@ class TrackerWindow(QWidget):
             f"   vs   {theme.CLASS_NAMES.get(opponent_class, opponent_class or '?')}"
         )
         self._set_turn_text(game)
+
+        self.my_hand_label.setText(t("hand_count", hand=game.my_hand_count))
 
         deck = self._selected_deck(game)
         if deck is not None:
@@ -652,6 +664,7 @@ class TrackerWindow(QWidget):
             len(game.my_events),
             len(game.opponent_events),
             game.my_deck_count,
+            game.my_hand_count,
             game.opponent_hand_count,
             game.opponent_deck_count,
         )
