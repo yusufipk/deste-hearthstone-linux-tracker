@@ -10,6 +10,8 @@ It exists because the one open source tracker on Linux, Arena Tracker, is
 unmaintained and its Qt5 + OpenCV design breaks on every patch. "Deste" is
 Turkish for "deck".
 
+![deste tracking a match](assets/screenshot.webp)
+
 ## What it does today
 
 - **Your deck:** remaining cards sorted by mana cost, with counts. A card you

@@ -9,6 +9,8 @@ bellek okuma yok. Yeni set çıktığında kod değil sadece kart verisi güncel
 Kişisel ihtiyaçtan doğdu, Arena Tracker'ın Qt5 + OpenCV mimarisi hem bakımsız
 hem de her yamada kırılıyordu.
 
+![maç sırasında deste](assets/screenshot.webp)
+
 ## Şu an ne yapıyor
 
 - **Kendi destem:** kalan kartlar mana sırasına göre, adetleriyle. Çekilen kart
