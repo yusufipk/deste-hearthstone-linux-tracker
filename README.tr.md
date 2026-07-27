@@ -21,6 +21,9 @@ hem de her yamada kırılıyordu.
 - **Deste seçimi kendiliğinden:** deste kodu yapıştırmaya gerek yok, oyunun
   çevrimdışı önbelleğindeki desteler okunuyor ve maçtaki sınıfa göre eşleşen
   deste seçiliyor. Menüden elle de seçilebilir.
+- **Maç geçmişi ve winrate:** biten her maç küçük bir sqlite dosyasına yazılıyor
+  (mod, deste, iki sınıf, sonuç, tur sayısı), `⋮` menüsündeki pencere desteye ve
+  rakip sınıfına göre galibiyet oranını gösteriyor.
 - **Kart görselleri:** satırın arka planında kartın sanatı, üzerine gelince
   kartın tam görseli (metni de görselin üstünde).
 - **Ayarlanabilir saydamlık**, overlay (çerçevesiz, üstte) ve normal pencere
@@ -53,7 +56,8 @@ yüzden aynı motor terminalden (`tools/live.py`) veya kayıtlı loglar üstünd
 Kart isimleri, maliyetleri ve nadirlikleri HearthstoneJSON'dan bir kere
 indirilip `~/.cache/deste/` altına yazılır. Kart görselleri de aynı yere, ama
 yalnızca ihtiyaç duyulduğunda ve arka planda. Ağ yoksa uygulama önbellekle
-çalışmaya devam eder.
+çalışmaya devam eder. Biten maçlar `~/.local/share/deste/history.db` içine
+yazılıyor.
 
 ## Kurulum
 
@@ -90,7 +94,9 @@ python main.py --full     # mevcut oturum logunu baştan okuyup başlat
 
 python -m tools.live      # terminalde canlı takip
 python -m tools.replay <log_dizini> --deck   # kayıtlı oturumu baştan oynat
+python -m tools.import_history               # eski oturum loglarını geçmişe aktar
 python -m tests.test_replay <log_dizini>     # tutarlılık testleri
+python -m tests.test_history                 # maç geçmişi testleri
 ```
 
 Pencere kapatıldığında uygulama tepsiye iner, tepsi ikonuna tıklayınca geri
@@ -136,6 +142,7 @@ core/     saf stdlib, UI ve ağ bilmez, headless test edilebilir
   state.py        olay -> oyun durumu (varlıklar, bölgeler, deste)
   watcher.py      canlı takip döngüsü (Qt'ye bağımlı değil)
   deckstring.py   deste kodu çöz/kodla
+  history.py      maç geçmişi ve winrate (sqlite)
   config.py       kullanıcı ayarları
 data/     ağ ve disk önbelleği
   cards.py        HearthstoneJSON kart verisi
@@ -144,6 +151,7 @@ data/     ağ ve disk önbelleği
   images.py       kart görselleri (tile ve tam render), arka planda indirir
 ui/       PyQt6 arayüz
   window.py       panel, tepsi ikonu, saydamlık, mod yönetimi
+  history_window.py  maç geçmişi, desteye ve sınıfa göre winrate
   widgets.py      kart satırı (sanat şeridi) ve hover önizlemesi
   i18n.py         arayüz metinleri, Türkçe ve İngilizce
   theme.py        renkler ve stil
@@ -176,6 +184,11 @@ karıştırılan kartlar listeye eklenir.
 
 **Log dosyaları asla silinmez.** Sadece okunur.
 
+**Maç, sonucu belli olduğu anda geçmişe yazılır**, maç nesnesi kapandığında
+değil: kapanma ancak bir sonraki maç başlayınca oluyor. Benzersiz anahtar oturum
+dizini ile maçın başlangıç saati, bu yüzden eski loglar aynı veritabanına
+istendiği kadar tekrar aktarılabilir, kopya oluşmaz.
+
 ## Doğrulama
 
 `tests/test_replay.py` uydurma veri kullanmaz, makinedeki gerçek oturum
@@ -199,8 +212,6 @@ pencere açmıyor.
 
 Sırada:
 
-- **Maç geçmişi ve winrate** (sqlite, stdlib): maç başına mod, sınıflar,
-  sonuç, tur sayısı; desteye ve sınıfa göre winrate ekranı.
 - **Rakip arketip tahmini:** HSReplay imza kartlarıyla eşleştirip "Zee Shaman,
   4/8 imza kartı" gibi bir tahmin. Eşleşme zayıfsa panel gizlenir, tahmin
   uydurulmaz.

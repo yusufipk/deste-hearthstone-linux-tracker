@@ -14,6 +14,23 @@ import urllib.request
 from pathlib import Path
 
 CARDS_URL = "https://api.hearthstonejson.com/v1/latest/enUS/cards.json"
+
+# Sınıfın temel kahramanı. Sınıfı simgeleyen bir görsele ihtiyaç duyulduğunda
+# (maç geçmişindeki portreler) bu kartın render'ı kullanılıyor.
+CLASS_HEROES = {
+    "WARRIOR": "HERO_01",
+    "SHAMAN": "HERO_02",
+    "ROGUE": "HERO_03",
+    "PALADIN": "HERO_04",
+    "HUNTER": "HERO_05",
+    "DRUID": "HERO_06",
+    "WARLOCK": "HERO_07",
+    "MAGE": "HERO_08",
+    "PRIEST": "HERO_09",
+    "DEMONHUNTER": "HERO_10",
+    "DEATHKNIGHT": "HERO_11",
+}
+
 USER_AGENT = "deste/0.1 (kisisel hearthstone tracker; +local)"
 CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", "~/.cache")).expanduser() / "deste"
 CARDS_PATH = CACHE_DIR / "cards.json"

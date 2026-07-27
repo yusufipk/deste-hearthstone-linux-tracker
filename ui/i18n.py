@@ -37,6 +37,41 @@ STRINGS: dict[str, dict[str, str]] = {
     "menu_draw_chance": {"tr": "Çekme yüzdesi", "en": "Draw chance"},
     "menu_language": {"tr": "Dil", "en": "Language"},
     "menu_reload_decks": {"tr": "Desteleri yeniden yükle", "en": "Reload decks"},
+    "menu_history": {"tr": "Maç geçmişi", "en": "Match history"},
+    "history_title": {"tr": "Maç geçmişi", "en": "Match history"},
+    "history_empty": {
+        "tr": "Henüz kayıtlı maç yok. Uygulama açıkken oynadığın maçlar buraya düşer.",
+        "en": "No matches recorded yet. Games you play with the app open land here.",
+    },
+    "history_totals": {
+        "tr": "{total} maç   {wins}G {losses}M",
+        "en": "{total} matches   {wins}W {losses}L",
+    },
+    "history_by_deck": {"tr": "DESTEYE GÖRE", "en": "BY DECK"},
+    "history_by_opponent": {"tr": "RAKİP SINIFINA GÖRE", "en": "BY OPPONENT CLASS"},
+    "history_recent": {"tr": "SON MAÇLAR", "en": "RECENT MATCHES"},
+    "history_all_modes": {"tr": "Tüm modlar", "en": "All modes"},
+    "history_no_deck": {"tr": "Deste yok", "en": "No deck"},
+    "column_date": {"tr": "Tarih", "en": "Date"},
+    "column_mode": {"tr": "Mod", "en": "Mode"},
+    "column_deck": {"tr": "Deste", "en": "Deck"},
+    "column_opponent": {"tr": "Rakip", "en": "Opponent"},
+    "column_result": {"tr": "Sonuç", "en": "Result"},
+    "column_turns": {"tr": "Tur", "en": "Turns"},
+    "column_record": {"tr": "G-M", "en": "W-L"},
+    "column_winrate": {"tr": "Galibiyet", "en": "Win rate"},
+    "percent": {"tr": "%{value}", "en": "{value}%"},
+    # strftime kalıbı. Ay adı yok: adlar sistem yerelinden geliyor, İngilizce
+    # arayüzde Türkçe ay kısaltması çıkıyordu.
+    "date_format": {"tr": "%d.%m %H:%M", "en": "%m-%d %H:%M"},
+    "coin_first": {"tr": "Önce başladın", "en": "You went first"},
+    "coin_second": {"tr": "Sonra başladın", "en": "You went second"},
+    "mode_RANKED": {"tr": "Dereceli", "en": "Ranked"},
+    "mode_CASUAL": {"tr": "Serbest", "en": "Casual"},
+    "mode_ARENA": {"tr": "Arena", "en": "Arena"},
+    "mode_VS_AI": {"tr": "Yapay zeka", "en": "vs AI"},
+    "mode_TAVERNBRAWL": {"tr": "Meyhane kapışması", "en": "Tavern Brawl"},
+    "mode_BATTLEGROUNDS": {"tr": "Battlegrounds", "en": "Battlegrounds"},
     "menu_hide": {"tr": "Gizle (tepsiye)", "en": "Hide to tray"},
     "menu_quit": {"tr": "Çıkış", "en": "Quit"},
     "tray_toggle": {"tr": "Göster / Gizle", "en": "Show / Hide"},
@@ -62,6 +97,9 @@ STRINGS: dict[str, dict[str, str]] = {
     },
 }
 
+# Maç sonucunun metin anahtarı. İşaretin kendisi theme.RESULT_MARKS içinde.
+RESULT_KEYS = {"WON": "result_won", "LOST": "result_lost", "TIED": "result_tied"}
+
 _current = "en"
 
 
@@ -80,6 +118,11 @@ def set_language(code: str) -> None:
 
 def current() -> str:
     return _current
+
+
+def has(key: str) -> bool:
+    """Anahtar sözlükte var mı? Çevirisi olmayan değerler ham gösterilsin diye."""
+    return key in STRINGS
 
 
 def t(key: str, **kwargs) -> str:

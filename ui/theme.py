@@ -14,6 +14,9 @@ MANA_BLUE = "#1f4e8c"
 WIN = "#5fbf6a"
 LOSS = "#d0605a"
 
+# Maç sonucu: yazı yerine işaret. Hem panelde hem maç geçmişinde aynı dil.
+RESULT_MARKS = {"WON": ("✓", WIN), "LOST": ("✗", LOSS), "TIED": ("=", TEXT_DIM)}
+
 RARITY_COLORS = {
     "COMMON": "#c9cedb",
     "FREE": "#c9cedb",
@@ -130,4 +133,32 @@ QScrollBar::handle:vertical {{ background: {BORDER}; border-radius: 2px; min-hei
 QScrollBar::handle:vertical:hover {{ background: {TEXT_DIM}; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
 QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
+"""
+
+# Maç geçmişi penceresi. Panelin aksine saydam değil: oyunun üstünde değil,
+# yanında okunan bir pencere.
+TABLE_STYLESHEET = f"""
+QWidget#history {{ background: {BACKGROUND}; }}
+QLabel#title {{ font-size: 15px; font-weight: 600; }}
+QLabel#total {{ color: {TEXT_DIM}; font-size: 12px; }}
+QTableWidget {{
+    background: transparent;
+    border: none;
+    outline: none;
+}}
+QTableWidget::item {{ padding: 2px 6px; border: none; }}
+QTableWidget::item:selected {{ background: {SURFACE_ALT}; color: {TEXT}; }}
+QHeaderView::section {{
+    background: transparent;
+    color: {TEXT_DIM};
+    border: none;
+    border-bottom: 1px solid {BORDER};
+    padding: 4px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}}
+/* Başlıklar tıklanınca sıralıyor, imleç üstüne gelince belli olsun. */
+QHeaderView::section:hover {{ color: {TEXT}; }}
+QHeaderView::down-arrow, QHeaderView::up-arrow {{ width: 9px; height: 9px; }}
 """

@@ -28,7 +28,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from core import config
+from core import config, history
 from core.state import Game
 from data.images import TILE, ImageCache
 
@@ -40,8 +40,6 @@ from .widgets import CardList, CardPreview, ElidedLabel
 POLL_INTERVAL_MS = 400
 MIN_WIDTH = 210
 MIN_HEIGHT = 260
-RESULT_MARK = {"WON": ("✓", theme.WIN), "LOST": ("✗", theme.LOSS), "TIED": ("=", theme.TEXT_DIM)}
-RESULT_TOOLTIP = {"WON": "result_won", "LOST": "result_lost", "TIED": "result_tied"}
 OPACITY_STEPS = [1.00, 0.90, 0.75, 0.60, 0.45]
 
 
@@ -65,6 +63,11 @@ class TrackerWindow(QWidget):
         self.settings = settings
         self.mode = settings.get("window_mode", "overlay")
         self.images = ImageCache()
+        self.history = history.History()
+        self.history_window = None
+        # En son geçmişe yazılan maç. Sonuç geldikten sonra panel daha birkaç
+        # kez tazeleniyor, aynı maçı her seferinde yazmaya kalkmayalım.
+        self._recorded_key: tuple[str, str] | None = None
         # Önizleme pencereye bağlı: Wayland'da konumlandırılabilmesi için
         # bir ebeveyne bağlı popup olması gerekiyor, başıboş pencere taşınamaz.
         self.preview = CardPreview(self.images, self)
@@ -243,6 +246,9 @@ class TrackerWindow(QWidget):
             language_menu.addAction(action)
 
         menu.addSeparator()
+        history_action = QAction(t("menu_history"), self)
+        history_action.triggered.connect(self._show_history)
+        menu.addAction(history_action)
         reload_action = QAction(t("menu_reload_decks"), self)
         reload_action.triggered.connect(self._reload_decks)
         menu.addAction(reload_action)
@@ -292,6 +298,8 @@ class TrackerWindow(QWidget):
         self.opponent_list.set_empty_text(t("opponent_empty"))
         self.opponent_title.setText(t("opponent_title"))
         self._rebuild_deck_menu()
+        if self.history_window is not None:
+            self.history_window.reload()
         self._refresh(force=True)
 
     def _on_tray_activated(self, reason) -> None:
@@ -308,6 +316,9 @@ class TrackerWindow(QWidget):
     def _quit(self) -> None:
         self._save_geometry()
         self.images.shutdown()
+        self.history.close()
+        if self.history_window is not None:
+            self.history_window.close()
         self.tray.hide()
         from PyQt6.QtWidgets import QApplication
 
@@ -343,12 +354,12 @@ class TrackerWindow(QWidget):
             self.turn_label.setText("")
             self.turn_label.setToolTip("")
             return
-        mark, color = RESULT_MARK.get(game.result, ("", ""))
+        mark, color = theme.RESULT_MARKS.get(game.result, ("", ""))
         if mark:
             self.turn_label.setText(
                 f'T{game.game_turn} <span style="color:{color}">{mark}</span>'
             )
-            self.turn_label.setToolTip(t(RESULT_TOOLTIP[game.result]))
+            self.turn_label.setToolTip(t(i18n.RESULT_KEYS[game.result]))
         else:
             self.turn_label.setText(f"T{game.game_turn}")
             self.turn_label.setToolTip("")
@@ -364,6 +375,17 @@ class TrackerWindow(QWidget):
         width = menu.sizeHint().width()
         x = button.width() - width if align_right else 0
         menu.popup(button.mapToGlobal(QPoint(x, button.height() + 3)))
+
+    def _show_history(self) -> None:
+        from .history_window import HistoryWindow
+
+        if self.history_window is None:
+            self.history_window = HistoryWindow(self.history, self.settings, self.images)
+        else:
+            self.history_window.reload()
+        self.history_window.show()
+        self.history_window.raise_()
+        self.history_window.activateWindow()
 
     def _reload_decks(self) -> None:
         self.library.load()
@@ -591,6 +613,33 @@ class TrackerWindow(QWidget):
         self.opponent_list.set_cards(opponent_entries)
         self.opponent_list.set_opacity(float(self.settings.get("opacity", 0.90)))
         self.images.prefetch([e["card_id"] for e in opponent_entries], TILE)
+
+        self._record_history(game, deck, my_class, opponent_class)
+
+    def _record_history(self, game: Game, deck, my_class: str, opponent_class: str) -> None:
+        """Sonucu belli olan maçı geçmişe yazar.
+
+        Tracker bir maçı ancak bir sonraki maç başlayınca kapatıyor, oysa sonuç
+        etiketi maçın son anında geliyor; o yüzden maç bitişini beklemeden
+        sonucu görür görmez yazıyoruz. Aynı maçın ikinci kez yazılmasını hem
+        buradaki anahtar hem de veritabanındaki benzersizlik engelliyor.
+        """
+        if not game.result:
+            return
+        source = self.watcher.log_dir.name if self.watcher.log_dir else ""
+        key = (source, game.started_ts)
+        if key == self._recorded_key:
+            return
+        self._recorded_key = key
+        record = history.from_game(
+            game,
+            source,
+            my_class=my_class,
+            opponent_class=opponent_class,
+            deck=deck.name if deck is not None else "",
+        )
+        if self.history.add(record) and self.history_window is not None:
+            self.history_window.reload()
 
     @staticmethod
     def _signature(game: Game | None):

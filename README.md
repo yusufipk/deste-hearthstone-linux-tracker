@@ -23,6 +23,9 @@ Turkish for "deck".
 - **No deck codes needed:** decks are read from the game's own offline cache and
   the one matching the match is picked by class and by the cards you draw. You
   can also pick one by hand from the menu.
+- **Match history and win rate:** every finished match is written to a small
+  sqlite file (mode, deck, both classes, result, turn count) and the `⋮` menu
+  shows the win rate by deck and by opponent class.
 - **Card art** as the background of each row, and the full card image (rules
   text included) when you hover over it.
 - **Adjustable transparency**, an overlay mode (frameless, always on top) and a
@@ -54,7 +57,8 @@ knowing about Qt, which is why the same engine runs from the terminal
 
 Card names, costs and rarities are downloaded once from HearthstoneJSON into
 `~/.cache/deste/`. Card images go to the same place, lazily and in the
-background. With no network the app keeps running off the cache.
+background. With no network the app keeps running off the cache. Finished
+matches go into `~/.local/share/deste/history.db`.
 
 ## Install
 
@@ -92,7 +96,9 @@ python main.py --full     # start by replaying the current session log
 
 python -m tools.live      # live tracking in the terminal
 python -m tools.replay <log_dir> --deck   # replay a recorded session
+python -m tools.import_history            # backfill history from old session logs
 python -m tests.test_replay <log_dir>     # consistency tests
+python -m tests.test_history              # match history tests
 ```
 
 Closing the window drops the app into the tray, clicking the tray icon brings it
@@ -139,6 +145,7 @@ core/     pure stdlib, knows nothing about UI or network, testable headless
   state.py        event -> game state (entities, zones, deck)
   watcher.py      live tracking loop (no Qt dependency)
   deckstring.py   deck code encode/decode
+  history.py      match history and win rate (sqlite)
   config.py       user settings
 data/     network and disk cache
   cards.py        HearthstoneJSON card data
@@ -147,6 +154,7 @@ data/     network and disk cache
   images.py       card images (tile and full render), downloaded in background
 ui/       PyQt6 interface
   window.py       panel, tray icon, transparency, window modes
+  history_window.py  match history, win rate by deck and by class
   widgets.py      card row (art strip) and hover preview
   i18n.py         interface strings, English and Turkish
   theme.py        colors and style
@@ -180,6 +188,11 @@ during the game are added to the list instead.
 
 **Log files are never deleted.** They are only read.
 
+**A match lands in the history the moment its result is known**, not when the
+game object is closed (that only happens once the next match starts). The
+session directory plus the match start time is the unique key, so importing old
+logs into the same database can be repeated without producing duplicates.
+
 ## Verification
 
 `tests/test_replay.py` uses no synthetic data, it reads real session logs from
@@ -203,8 +216,6 @@ exercised in a virtual KWin session: `kwin_wayland --virtual --width 1800
 
 Next:
 
-- **Match history and winrate** (sqlite, stdlib): mode, classes, result and turn
-  count per match; winrate by deck and by class.
 - **Opponent archetype prediction:** match revealed cards against HSReplay
   signature cards and show something like "Zee Shaman, 4/8 signature cards". If
   the match is weak the panel hides itself instead of inventing a guess.

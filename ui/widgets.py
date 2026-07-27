@@ -8,7 +8,7 @@ görselle birlikte satır tanınabilir oluyor.
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QPoint, QRect, QSize, Qt, QTimer
+from PyQt6.QtCore import QPoint, QRect, QRectF, QSize, Qt, QTimer
 from PyQt6.QtGui import (
     QColor,
     QFont,
@@ -30,6 +30,57 @@ COUNT_WIDTH = 30
 PREVIEW_DELAY_MS = 200
 HIDE_DELAY_MS = 140
 PREVIEW_GAP = 8
+
+# Kahraman kartının render'ında yüzün bulunduğu kare: sol kenar, üst kenar ve
+# kenar uzunluğu, kart genişliğinin oranı olarak. Altın çerçeve dışarıda kalsın
+# diye deneyerek bulundu.
+PORTRAIT_CROP = (0.33, 0.18, 0.34)
+
+
+def _circle(size: int) -> QPainterPath:
+    path = QPainterPath()
+    path.addEllipse(QRectF(0.0, 0.0, float(size), float(size)))
+    return path
+
+
+def color_dot(color: str, size: int) -> QPixmap:
+    """Sınıf rengiyle dolu daire. Portre inene kadarki yer tutucu."""
+    pixmap = QPixmap(size, size)
+    pixmap.fill(QColor(0, 0, 0, 0))
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.fillPath(_circle(size), QColor(color))
+    painter.end()
+    return pixmap
+
+
+def hero_portrait(path, size: int) -> QPixmap | None:
+    """Kahraman kartının render'ından daire portre keser."""
+    source = QPixmap(str(path))
+    if source.isNull():
+        return None
+    left, top, side = PORTRAIT_CROP
+    crop = source.copy(
+        QRect(
+            int(source.width() * left),
+            int(source.height() * top),
+            int(source.width() * side),
+            int(source.width() * side),
+        )
+    ).scaled(
+        size,
+        size,
+        Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+        Qt.TransformationMode.SmoothTransformation,
+    )
+    pixmap = QPixmap(size, size)
+    pixmap.fill(QColor(0, 0, 0, 0))
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setClipPath(_circle(size))
+    painter.drawPixmap(0, 0, crop)
+    painter.end()
+    return pixmap
 
 
 class ElidedLabel(QLabel):
