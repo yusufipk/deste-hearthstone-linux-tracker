@@ -1,4 +1,4 @@
-# deste
+# <img src="assets/deste.svg" width="26" align="top"> deste
 
 [English](README.md) | Türkçe
 
@@ -10,6 +10,8 @@ Kişisel ihtiyaçtan doğdu, Arena Tracker'ın Qt5 + OpenCV mimarisi hem bakıms
 hem de her yamada kırılıyordu.
 
 ![maç sırasında deste](assets/screenshot.webp)
+
+![maç geçmişi ve kazanma oranı](assets/history.webp)
 
 ## Şu an ne yapıyor
 

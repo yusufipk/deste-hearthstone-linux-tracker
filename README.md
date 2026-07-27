@@ -1,4 +1,4 @@
-# deste
+# <img src="assets/deste.svg" width="26" align="top"> deste
 
 English | [Türkçe](README.tr.md)
 
@@ -11,6 +11,8 @@ unmaintained and its Qt5 + OpenCV design breaks on every patch. "Deste" is
 Turkish for "deck".
 
 ![deste tracking a match](assets/screenshot.webp)
+
+![match history and win rate](assets/history.webp)
 
 ## What it does today
 
