@@ -31,6 +31,30 @@ class Failure(Exception):
     pass
 
 
+class Clock:
+    """Gün içi log saatlerini tek bir artan eksene çevirir.
+
+    Log satırları yalnızca saati yazıyor, gece yarısını geçen bir oturumda saat
+    geriye sarıyor. Damgaları metin olarak karşılaştırmak o noktada maç
+    pencerelerini kaydırıyordu: 00:02'de çekilen kart 23:52'de başlayan maça
+    ait sayılmıyordu. Damgalar sırayla okunduğu için sarmayı görüp bir gün
+    ekliyoruz.
+    """
+
+    def __init__(self):
+        self.offset = 0.0
+        self.last = 0.0
+
+    def __call__(self, ts: str) -> float:
+        hours, minutes, seconds = ts.split(":")
+        value = int(hours) * 3600 + int(minutes) * 60 + float(seconds) + self.offset
+        if value < self.last - 1.0:
+            self.offset += 86400.0
+            value += 86400.0
+        self.last = max(self.last, value)
+        return value
+
+
 def check(condition: bool, message: str) -> None:
     if not condition:
         raise Failure(message)
@@ -44,22 +68,38 @@ def load_games(log_dir: Path) -> list[Game]:
     return games
 
 
-def zone_draws_by_window(log_dir: Path, windows: list[tuple[str, str]]) -> list[set[int]]:
+def match_windows(games: list[Game]) -> list[tuple[float, float]]:
+    """Maçların başlangıç/bitiş damgalarını saniyeye çevirir.
+
+    Maçlar sırayla geldiği için tek bir saat yetiyor; son maç açık kalmışsa
+    bitişi sonsuz sayılıyor.
+    """
+    clock = Clock()
+    windows: list[tuple[float, float]] = []
+    for game in games:
+        start = clock(game.started_ts)
+        end = clock(game.ended_ts) if game.ended_ts else float("inf")
+        windows.append((start, end))
+    return windows
+
+
+def zone_draws_by_window(log_dir: Path, windows: list[tuple[float, float]]) -> list[set[int]]:
     """Zone.log'dan her maç penceresi için FRIENDLY DECK -> FRIENDLY HAND
     geçişi yapan varlık kimliklerini toplar."""
     results: list[set[int]] = [set() for _ in windows]
     zone_log = log_dir / "Zone.log"
     if not zone_log.exists():
         return results
+    clock = Clock()
     for line in logtail.read_file_lines(zone_log):
         match = ZONE_LINE_RE.match(line)
         if not match:
             continue
+        ts = clock(match.group("ts"))
         if match.group("src") != "FRIENDLY DECK" or match.group("dst") != "FRIENDLY HAND":
             continue
-        ts = match.group("ts")
         for index, (start, end) in enumerate(windows):
-            if start <= ts and (not end or ts <= end):
+            if start <= ts <= end:
                 results[index].add(int(match.group("id")))
                 break
     return results
@@ -144,8 +184,7 @@ def run(log_dir: Path) -> int:
     record("başlangıç desteleri 30 ya da 40 kart", check_initial_decks)
 
     # Bağımsız kaynakla çapraz doğrulama.
-    windows = [(g.started_ts, g.ended_ts) for g in games]
-    zone_draws = zone_draws_by_window(log_dir, windows)
+    zone_draws = zone_draws_by_window(log_dir, match_windows(games))
 
     def check_draws() -> None:
         # Kimlik kümesi karşılaştırılıyor, sayı değil: Zone.log aynı geçişi
